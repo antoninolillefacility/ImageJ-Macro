@@ -1,0 +1,130 @@
+/*Antonino Bongiovanni 
+antonino.bongiovanni@univ-lille.fr
+Univ. Lille, CNRS, Inserm, CHU Lille, Institut Pasteur de Lille, US 41 - UMS 2014 - PLBS, F-59000 Lille, France*/
+
+dir=getDirectory("Repertoire DAPI ?");
+files=getFileList(dir)
+dir3=getDirectory("Repertoire GFP ?");
+files3=getFileList(dir3)
+File.makeDirectory(dir+"TIF");
+setBatchMode(true);
+name=newArray(100000);
+nuclei=newArray(10000000);
+
+red=newArray(10000000);
+red_pos=newArray(10000000);
+red_pos_global=newArray(10000000);
+
+
+run("Set Measurements...", "area mean median redirect=None decimal=2");
+run("Line Width...", "line=1");
+
+for(num=0;num<files.length;num++)
+{
+
+if (roiManager("count")>0) 
+{	
+roiManager("Delete");
+}
+if (roiManager("count")>0) 
+{	
+roiManager("Delete");
+}
+open(dir+files[num]);
+filename=File.name;
+name[num]=File.name;
+open(dir3+files3[num]);
+filename3=File.name;
+run("Clear Results");
+run("Merge Channels...", "c1=["+filename+"] c2=["+filename3+"] create");
+selectWindow("Composite");
+run("Properties...", "channels=2 slices=1 frames=1 unit=pixel pixel_width=1 pixel_height=1 voxel_depth=1");
+setSlice(1);
+run("Blue");
+run("Enhance Contrast", "saturated=0.35");
+setSlice(2);
+run("Enhance Contrast", "saturated=0.35");
+run("Green");
+//saveAs("tif", dir+"TIF"+File.separator+filename);
+rename(filename);
+run("RGB Color");
+rename("RGB-"+filename);
+
+run("Tile");
+
+//Quantif*******************************************************************
+selectWindow(filename);
+setSlice(1);
+run("Duplicate...", " ");
+rename("DAPI Temp");
+selectWindow("DAPI Temp");
+setThreshold(1040,65535);
+run("Convert to Mask");
+run("Watershed");
+run("Analyze Particles...", "size=10-5000 add");
+nuclei[num]=roiManager("count");
+		
+selectWindow("DAPI Temp");
+close();
+selectWindow(filename);
+run("Clear Results");
+red_pos_global[num]=0;
+
+for (i=0;i<nuclei[num];i++)
+	{
+		run("Clear Results");
+		selectWindow(filename);
+		print("Loading Measure : "+(i*100)/nuclei[num]);
+		roiManager("Select", i);
+		setSlice(2);
+		run("Measure");
+		red[num]=getResult("Mean",0);
+		if (red[num]>13000)
+		{
+			red_pos[num]=1;
+		run("Colors...", "foreground=green background=black selection=white");
+		selectWindow("RGB-"+filename);
+		roiManager("Select", i);
+		run("Draw");
+		}
+		
+		else
+		{
+			red_pos[num]=0;
+		}
+		
+			
+red_pos_global[num]=red_pos_global[num]+red_pos[num];
+		}
+		
+if (roiManager("count")>0) 
+{	
+roiManager("Delete");
+}
+if (roiManager("count")>0) 
+{	
+roiManager("Delete");
+}
+selectWindow(filename);
+close();
+selectWindow("RGB-"+filename);
+run("Select All");
+run("Scale...", "x=0.9 y=0.9 interpolation=Bilinear average create");
+saveAs("Jpeg", dir+"TIF"+File.separator+filename+"-RGB");
+close();
+selectWindow("RGB-"+filename);
+close();
+run("Clear Results");
+}
+
+
+for(num=0;num<files.length;num++)
+{
+setResult("Label",num,name[num]);
+setResult("Number of cells",num,nuclei[num]);
+setResult("Positif GREEN",num,red_pos_global[num]);
+}
+	updateResults;
+	
+selectWindow("Results"); 
+saveAs("Results",dir+"TIF"+File.separator+"Results per image.xls");
