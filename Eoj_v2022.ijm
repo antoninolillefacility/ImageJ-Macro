@@ -54,7 +54,8 @@ run("8-bit");
 //run("Find Edges");
 selectWindow("global");
 setAutoThreshold("Default");
-setThreshold(1, 170);
+setThreshold(1, 156);
+waitForUser("validation seuil pour coupe");
 run("Convert to Mask");
 run("Fill Holes");
 run("Options...", "iterations=5 count=1 black do=Dilate");
@@ -122,7 +123,7 @@ run("Duplicate...", " ");
 rename("granule");
 selectWindow("cells");
 setAutoThreshold("Default");
-setThreshold(0,123);
+setThreshold(0,180);
 run("Convert to Mask");
 run("Analyze Particles...", "size=8.01-100.00 circularity=0.6-1.00 add");
 selectWindow("cells");
@@ -184,7 +185,7 @@ roiManager("Delete");
 
 selectWindow("granule");
 run("Select All");
-run("Analyze Particles...", "size=100.01-200 add");
+run("Analyze Particles...", "size=100.01-infinity add");
 granule2[num]=roiManager("count");
 run("Colors...", "foreground=red background=white selection=blue");
 for (k=0;k<granule2[num];k++)
